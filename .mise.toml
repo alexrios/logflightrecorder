@@ -7,7 +7,7 @@ run = "go test -v -race ./..."
 description = "Run all tests with race detector"
 
 [tasks.bench]
-run = "go test -bench=. -benchmem ./..."
+run = "go test -bench=. -benchmem -count=10 ./..."
 description = "Run benchmarks"
 
 [tasks.lint]

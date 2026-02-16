@@ -23,7 +23,6 @@ go get github.com/alexrios/logflightrecorder
 package main
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 
@@ -31,12 +30,12 @@ import (
 )
 
 func main() {
-	ring := lfr.New(500, nil)
-	logger := slog.New(ring)
+	rec := lfr.New(500, nil)
+	logger := slog.New(rec)
 	slog.SetDefault(logger)
 
 	http.HandleFunc("GET /debug/logs", func(w http.ResponseWriter, r *http.Request) {
-		data, err := ring.JSON()
+		data, err := rec.JSON()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -80,12 +79,12 @@ func main() {
 Keep a ring buffer of recent logs and flush them to stderr when an error occurs:
 
 ```go
-ring := lfr.New(500, &lfr.Options{
+rec := lfr.New(500, &lfr.Options{
 	FlushOn: slog.LevelError,
 	FlushTo: slog.NewJSONHandler(os.Stderr, nil),
 	MaxAge:  5 * time.Minute,
 })
-logger := slog.New(ring)
+logger := slog.New(rec)
 
 logger.Info("request started", "path", "/api/users")
 logger.Info("db query", "rows", 42)
@@ -98,27 +97,27 @@ Serve the ring buffer over HTTP with `WriteTo`:
 ```go
 http.HandleFunc("GET /debug/logs", func(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	ring.WriteTo(w) // implements io.WriterTo
+	rec.WriteTo(w) // implements io.WriterTo
 })
 ```
 
 ## Benchmarks
 
-Measured on an Intel Core i9-14900K (32 threads):
+Median values via `benchstat -count=10` on an Intel Core i9-14900K (32 threads):
 
 | Benchmark | ns/op | B/op | allocs/op |
 |---|---:|---:|---:|
-| Handle | 91 | 0 | 0 |
-| Handle_Parallel | 271 | 0 | 0 |
-| Handle_WithFlush | 86 | 0 | 0 |
-| Handle_FlushTrigger | 42,135 | 32,768 | 1 |
-| Records (1000) | 182,295 | 294,913 | 1 |
-| All (1000) | 126,891 | 294,912 | 1 |
-| JSON (100 records, 5 attrs) | 380,854 | 140,814 | 1,804 |
-| WriteTo | 386,905 | 140,843 | 1,804 |
-| WithAttrs (5 attrs) | 257 | 288 | 2 |
-| WithGroup | 47 | 16 | 1 |
-| Records_WithMaxAge | 245,142 | 294,912 | 1 |
+| Handle | 90.60 | 0 | 0 |
+| Handle_Parallel | 514 | 0 | 0 |
+| Handle_WithFlush | 85.55 | 0 | 0 |
+| Handle_FlushTrigger | 32,230 | 32,768 | 1 |
+| Records (1000) | 285,000 | 294,912 | 1 |
+| All (1000) | 314,700 | 294,912 | 1 |
+| JSON (100 records, 5 attrs) | 441,900 | 140,698 | 1,804 |
+| WriteTo | 456,900 | 140,595 | 1,804 |
+| WithAttrs (5 attrs) | 328 | 288 | 2 |
+| WithGroup | 49.21 | 16 | 1 |
+| Records_WithMaxAge | 237,400 | 294,912 | 1 |
 
 ## License
 

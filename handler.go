@@ -1,5 +1,5 @@
 // Package logflightrecorder provides a [slog.Handler] that keeps the last N log records
-// in a circular buffer. It is designed for exposing recent logs via health-check
+// in a circular buffer. It is designed for exposing recent logs via health check
 // or admin HTTP endpoints.
 package logflightrecorder
 
@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// Options configures a [Handler].
+// Options configure a [Handler].
 type Options struct {
 	// Level reports the minimum record level that will be stored.
 	// The handler discards records with lower levels.
@@ -36,8 +36,8 @@ type Options struct {
 	MaxAge time.Duration
 }
 
-// core is the shared ring buffer backing one or more Handlers.
-type core struct {
+// recorder is the shared ring buffer backing one or more Handlers.
+type recorder struct {
 	mu    sync.RWMutex
 	buf   []slog.Record
 	head  int    // next write position
@@ -46,7 +46,7 @@ type core struct {
 
 	flushOn   slog.Leveler
 	flushTo   slog.Handler
-	lastFlush uint64 // value of total at last flush
+	lastFlush uint64 // value of total at the last flush
 
 	maxAge time.Duration
 }
@@ -55,7 +55,7 @@ type core struct {
 // Handlers returned by [Handler.WithAttrs] and [Handler.WithGroup] share the same
 // underlying buffer.
 type Handler struct {
-	core   *core
+	core   *recorder
 	level  slog.Leveler
 	attrs  []slog.Attr
 	groups []string
@@ -71,7 +71,7 @@ func New(size int, opts *Options) *Handler {
 	if opts != nil && opts.Level != nil {
 		level = opts.Level
 	}
-	c := &core{
+	c := &recorder{
 		buf: make([]slog.Record, size),
 	}
 	if opts != nil {
@@ -126,11 +126,11 @@ func (h *Handler) Handle(_ context.Context, r slog.Record) error {
 	}
 	c.mu.Unlock()
 
-	// Flush outside the lock to avoid blocking writers if FlushTo does I/O.
+	// Flush outside the lock to avoid blocking writers if FlushTo do I/O.
 	var flushed int
 	for _, fr := range flushRecords {
 		if err := c.flushTo.Handle(context.Background(), fr); err != nil {
-			// Update lastFlush for successfully flushed records before returning error.
+			// Update lastFlush for successfully flushed records before returning an error.
 			c.mu.Lock()
 			c.lastFlush += uint64(flushed)
 			c.mu.Unlock()
@@ -164,7 +164,7 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return h2
 }
 
-// WithGroup returns a new Handler that qualifies subsequent attrs with the given group name.
+// WithGroup returns a new Handler that qualifies later attrs with the given group name.
 // The new handler shares the same ring buffer.
 func (h *Handler) WithGroup(name string) slog.Handler {
 	if name == "" {
@@ -176,7 +176,7 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 }
 
 // All returns an iterator over stored records from oldest to newest.
-// The snapshot is taken under a read lock; iteration itself holds no lock.
+// The snapshot is taken under a read lock; the iteration itself holds no lock.
 func (h *Handler) All() iter.Seq[slog.Record] {
 	snapshot := h.Records()
 	return func(yield func(slog.Record) bool) {
@@ -188,7 +188,7 @@ func (h *Handler) All() iter.Seq[slog.Record] {
 	}
 }
 
-// Records returns a snapshot of stored records from oldest to newest.
+// Records return a snapshot of stored records from oldest to newest.
 // If MaxAge is set, records older than MaxAge are excluded.
 func (h *Handler) Records() []slog.Record {
 	c := h.core
@@ -205,7 +205,7 @@ func (h *Handler) Records() []slog.Record {
 
 // snapshotAll returns all buffered records oldest-to-newest.
 // Must be called while holding c.mu.
-func (c *core) snapshotAll() []slog.Record {
+func (c *recorder) snapshotAll() []slog.Record {
 	out := make([]slog.Record, c.count)
 	if c.count < len(c.buf) {
 		copy(out, c.buf[:c.count])
@@ -218,7 +218,7 @@ func (c *core) snapshotAll() []slog.Record {
 
 // snapshotLast returns the last n records (the newest n), oldest-to-newest.
 // Must be called while holding c.mu.
-func (c *core) snapshotLast(n int) []slog.Record {
+func (c *recorder) snapshotLast(n int) []slog.Record {
 	if n <= 0 {
 		return nil
 	}
