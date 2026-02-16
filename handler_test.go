@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"testing/slogtest"
 	"time"
 )
 
@@ -940,3 +941,49 @@ func TestWriteTo_WriterError(t *testing.T) {
 
 // Verify Handler implements io.WriterTo.
 var _ io.WriterTo = (*Handler)(nil)
+
+func TestHandler_Slogtest(t *testing.T) {
+	var h *Handler
+	slogtest.Run(t, func(t *testing.T) slog.Handler {
+		h = New(100, nil)
+		return h
+	}, func(t *testing.T) map[string]any {
+		recs := h.Records()
+		if len(recs) == 0 {
+			return map[string]any{}
+		}
+		r := recs[len(recs)-1]
+		m := map[string]any{
+			slog.LevelKey:   r.Level,
+			slog.MessageKey: r.Message,
+		}
+		if !r.Time.IsZero() {
+			m[slog.TimeKey] = r.Time
+		}
+		r.Attrs(func(a slog.Attr) bool {
+			recordAttrToMap(m, a)
+			return true
+		})
+		return m
+	})
+}
+
+func recordAttrToMap(m map[string]any, a slog.Attr) {
+	v := a.Value.Resolve()
+	if v.Kind() == slog.KindGroup {
+		if a.Key == "" {
+			// Inline group: merge attrs into parent map.
+			for _, ga := range v.Group() {
+				recordAttrToMap(m, ga)
+			}
+			return
+		}
+		gm := map[string]any{}
+		for _, ga := range v.Group() {
+			recordAttrToMap(gm, ga)
+		}
+		m[a.Key] = gm
+	} else {
+		m[a.Key] = v.Any()
+	}
+}

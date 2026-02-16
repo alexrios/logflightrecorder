@@ -55,10 +55,11 @@ type recorder struct {
 // Handlers returned by [Handler.WithAttrs] and [Handler.WithGroup] share the same
 // underlying buffer.
 type Handler struct {
-	core   *recorder
-	level  slog.Leveler
-	attrs  []slog.Attr
-	groups []string
+	core       *recorder
+	level      slog.Leveler
+	attrs      []slog.Attr
+	groups     []string // full group path (never consumed)
+	groupsUsed int      // number of groups consumed by WithAttrs
 }
 
 // New creates a Handler with the given buffer capacity.
@@ -99,13 +100,26 @@ func (h *Handler) Enabled(_ context.Context, level slog.Level) bool {
 // If FlushOn/FlushTo are configured and the record's level reaches the
 // FlushOn threshold, all records since the last flush are forwarded to FlushTo.
 func (h *Handler) Handle(_ context.Context, r slog.Record) error {
-	// Build a new record with handler-level attrs prepended.
+	// Build a new record merging handler-level and record-level attrs.
 	nr := slog.NewRecord(r.Time, r.Level, r.Message, r.PC)
-	nr.AddAttrs(h.attrs...)
+
+	// Collect record-level attrs, skipping empty attrs per slog.Handler contract.
+	var recordAttrs []slog.Attr
 	r.Attrs(func(a slog.Attr) bool {
-		nr.AddAttrs(a)
+		if !a.Equal(slog.Attr{}) {
+			recordAttrs = append(recordAttrs, a)
+		}
 		return true
 	})
+
+	if len(h.groups) > 0 {
+		// Merge handler attrs and record attrs into the correct group nesting.
+		allAttrs := mergeGroupAttrs(slices.Clone(h.attrs), h.groups, recordAttrs)
+		nr.AddAttrs(allAttrs...)
+	} else {
+		nr.AddAttrs(h.attrs...)
+		nr.AddAttrs(recordAttrs...)
+	}
 
 	c := h.core
 	c.mu.Lock()
@@ -153,14 +167,14 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		return h
 	}
 	h2 := h.clone()
-	if len(h2.groups) > 0 {
-		// Nest attrs under open groups, then consume groups.
-		nested := nestAttrs(h2.groups, attrs)
-		h2.attrs = append(h2.attrs, nested...)
-		h2.groups = nil
+	pending := h2.groups[h2.groupsUsed:]
+	if len(pending) > 0 {
+		nested := nestAttrs(pending, attrs)
+		h2.attrs = mergeGroupAttrs(h2.attrs, h2.groups[:h2.groupsUsed], nested)
 	} else {
 		h2.attrs = append(h2.attrs, attrs...)
 	}
+	h2.groupsUsed = len(h2.groups)
 	return h2
 }
 
@@ -331,13 +345,14 @@ func recordsToEntries(records []slog.Record) []jsonEntry {
 }
 
 // clone returns a shallow copy of h with independent attr/group slices
-// but the same shared core.
+// but the same shared recorder.
 func (h *Handler) clone() *Handler {
 	return &Handler{
-		core:   h.core,
-		level:  h.level,
-		attrs:  slices.Clone(h.attrs),
-		groups: slices.Clone(h.groups),
+		core:       h.core,
+		level:      h.level,
+		attrs:      slices.Clone(h.attrs),
+		groups:     slices.Clone(h.groups),
+		groupsUsed: h.groupsUsed,
 	}
 }
 
@@ -348,6 +363,26 @@ func nestAttrs(groups []string, attrs []slog.Attr) []slog.Attr {
 		attrs = []slog.Attr{slog.Group(groups[i], attrsToAny(attrs)...)}
 	}
 	return attrs
+}
+
+// mergeGroupAttrs navigates into an existing attr tree following path,
+// then appends newAttrs at that level. If a matching Group attr exists
+// at each path segment, it recurses into it; otherwise it creates it.
+func mergeGroupAttrs(existing []slog.Attr, path []string, newAttrs []slog.Attr) []slog.Attr {
+	if len(path) == 0 {
+		return append(existing, newAttrs...)
+	}
+	name := path[0]
+	rest := path[1:]
+	for i, a := range existing {
+		if a.Key == name && a.Value.Kind() == slog.KindGroup {
+			merged := mergeGroupAttrs(a.Value.Group(), rest, newAttrs)
+			existing[i] = slog.Group(name, attrsToAny(merged)...)
+			return existing
+		}
+	}
+	// No existing group at this level — wrap newAttrs under remaining path.
+	return append(existing, nestAttrs(path, newAttrs)...)
 }
 
 func attrsToAny(attrs []slog.Attr) []any {
