@@ -202,7 +202,7 @@ func (h *Handler) All() iter.Seq[slog.Record] {
 	}
 }
 
-// Records return a snapshot of stored records from oldest to newest.
+// Records returns a snapshot of stored records from oldest to newest.
 // If MaxAge is set, records older than MaxAge are excluded.
 func (h *Handler) Records() []slog.Record {
 	c := h.core
