@@ -65,7 +65,7 @@ type Handler struct {
 // It panics if size < 1.
 func New(size int, opts *Options) *Handler {
 	if size < 1 {
-		panic("slogring: size must be at least 1")
+		panic("logflightrecorder: size must be at least 1")
 	}
 	level := slog.Leveler(slog.LevelInfo)
 	if opts != nil && opts.Level != nil {
@@ -216,7 +216,7 @@ func (c *core) snapshotAll() []slog.Record {
 	return out
 }
 
-// snapshotLast returns the last n records (newest n), oldest-to-newest.
+// snapshotLast returns the last n records (the newest n), oldest-to-newest.
 // Must be called while holding c.mu.
 func (c *core) snapshotLast(n int) []slog.Record {
 	if n <= 0 {

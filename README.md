@@ -108,13 +108,17 @@ Measured on an Intel Core i9-14900K (32 threads):
 
 | Benchmark | ns/op | B/op | allocs/op |
 |---|---:|---:|---:|
-| Handle | 89 | 0 | 0 |
-| Handle_Parallel | 282 | 0 | 0 |
-| Records (1000) | 121,534 | 294,915 | 1 |
-| All (1000) | 150,537 | 294,914 | 1 |
-| JSON (100 records, 5 attrs) | 267,649 | 140,507 | 1,804 |
-| WithAttrs (5 attrs) | 165 | 288 | 2 |
-| WithGroup | 35 | 16 | 1 |
+| Handle | 91 | 0 | 0 |
+| Handle_Parallel | 271 | 0 | 0 |
+| Handle_WithFlush | 86 | 0 | 0 |
+| Handle_FlushTrigger | 42,135 | 32,768 | 1 |
+| Records (1000) | 182,295 | 294,913 | 1 |
+| All (1000) | 126,891 | 294,912 | 1 |
+| JSON (100 records, 5 attrs) | 380,854 | 140,814 | 1,804 |
+| WriteTo | 386,905 | 140,843 | 1,804 |
+| WithAttrs (5 attrs) | 257 | 288 | 2 |
+| WithGroup | 47 | 16 | 1 |
+| Records_WithMaxAge | 245,142 | 294,912 | 1 |
 
 ## License
 

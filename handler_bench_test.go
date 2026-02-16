@@ -121,10 +121,10 @@ func BenchmarkWithGroup(b *testing.B) {
 // discardHandler is a no-op slog.Handler for benchmarking flush overhead.
 type discardHandler struct{}
 
-func (discardHandler) Enabled(context.Context, slog.Level) bool        { return true }
-func (discardHandler) Handle(context.Context, slog.Record) error       { return nil }
-func (discardHandler) WithAttrs([]slog.Attr) slog.Handler              { return discardHandler{} }
-func (discardHandler) WithGroup(string) slog.Handler                   { return discardHandler{} }
+func (discardHandler) Enabled(context.Context, slog.Level) bool  { return true }
+func (discardHandler) Handle(context.Context, slog.Record) error { return nil }
+func (discardHandler) WithAttrs([]slog.Attr) slog.Handler        { return discardHandler{} }
+func (discardHandler) WithGroup(string) slog.Handler             { return discardHandler{} }
 
 func BenchmarkHandle_WithFlush(b *testing.B) {
 	// Measure overhead of flush check on the hot path (INFO, no trigger).
