@@ -122,4 +122,4 @@ Measured on an Intel Core i9-14900K (32 threads):
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)
