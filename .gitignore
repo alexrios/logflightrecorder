@@ -1,0 +1,22 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of `go cover`
+*.out
+
+# IDE directories
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude Code project instructions
+CLAUDE.md
