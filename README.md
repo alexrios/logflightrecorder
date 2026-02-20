@@ -1,3 +1,7 @@
+> **This repository has been archived.** Development continues at [github.com/alexrios/slogbox](https://github.com/alexrios/slogbox).
+
+---
+
 # slogbox
 
 [![CI](https://github.com/alexrios/slogbox/actions/workflows/ci.yml/badge.svg)](https://github.com/alexrios/slogbox/actions/workflows/ci.yml)
