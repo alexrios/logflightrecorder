@@ -1,7 +1,7 @@
-// Package logflightrecorder provides a [slog.Handler] that keeps the last N log records
+// Package slogbox provides a [slog.Handler] that keeps the last N log records
 // in a circular buffer. It is designed for exposing recent logs via health check
 // or admin HTTP endpoints.
-package logflightrecorder
+package slogbox
 
 import (
 	"context"
@@ -66,7 +66,7 @@ type Handler struct {
 // It panics if size < 1.
 func New(size int, opts *Options) *Handler {
 	if size < 1 {
-		panic("logflightrecorder: size must be at least 1")
+		panic("slogbox: size must be at least 1")
 	}
 	level := slog.Leveler(slog.LevelInfo)
 	if opts != nil && opts.Level != nil {

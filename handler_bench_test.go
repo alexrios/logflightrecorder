@@ -1,4 +1,4 @@
-package logflightrecorder
+package slogbox
 
 import (
 	"bytes"

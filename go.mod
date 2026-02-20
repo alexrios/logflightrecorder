@@ -1,3 +1,3 @@
-module github.com/alexrios/logflightrecorder
+module github.com/alexrios/slogbox
 
 go 1.26

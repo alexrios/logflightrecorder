@@ -1,8 +1,8 @@
-# logflightrecorder
+# slogbox
 
-[![CI](https://github.com/alexrios/logflightrecorder/actions/workflows/ci.yml/badge.svg)](https://github.com/alexrios/logflightrecorder/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/alexrios/logflightrecorder.svg)](https://pkg.go.dev/github.com/alexrios/logflightrecorder)
-[![Go Report Card](https://goreportcard.com/badge/github.com/alexrios/logflightrecorder)](https://goreportcard.com/report/github.com/alexrios/logflightrecorder)
+[![CI](https://github.com/alexrios/slogbox/actions/workflows/ci.yml/badge.svg)](https://github.com/alexrios/slogbox/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/alexrios/slogbox.svg)](https://pkg.go.dev/github.com/alexrios/slogbox)
+[![Go Report Card](https://goreportcard.com/badge/github.com/alexrios/slogbox)](https://goreportcard.com/report/github.com/alexrios/slogbox)
 
 A `slog.Handler` that keeps the last N log records in a fixed-size circular buffer.
 Zero external dependencies -- stdlib only.
@@ -14,7 +14,7 @@ that flushes context-rich logs on error.
 ## Install
 
 ```bash
-go get github.com/alexrios/logflightrecorder
+go get github.com/alexrios/slogbox
 ```
 
 ## Quick start
@@ -26,11 +26,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	lfr "github.com/alexrios/logflightrecorder"
+	"github.com/alexrios/slogbox"
 )
 
 func main() {
-	rec := lfr.New(500, nil)
+	rec := slogbox.New(500, nil)
 	logger := slog.New(rec)
 	slog.SetDefault(logger)
 
@@ -79,7 +79,7 @@ func main() {
 Keep a ring buffer of recent logs and flush them to stderr when an error occurs:
 
 ```go
-rec := lfr.New(500, &lfr.Options{
+rec := slogbox.New(500, &slogbox.Options{
 	FlushOn: slog.LevelError,
 	FlushTo: slog.NewJSONHandler(os.Stderr, nil),
 	MaxAge:  5 * time.Minute,

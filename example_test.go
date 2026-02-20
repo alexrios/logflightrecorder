@@ -1,4 +1,4 @@
-package logflightrecorder_test
+package slogbox_test
 
 import (
 	"bytes"
@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	lfr "github.com/alexrios/logflightrecorder"
+	"github.com/alexrios/slogbox"
 )
 
 func ExampleNew() {
-	h := lfr.New(100, nil)
+	h := slogbox.New(100, nil)
 	logger := slog.New(h)
 
 	logger.Info("server started", "port", 8080)
@@ -22,7 +22,7 @@ func ExampleNew() {
 }
 
 func ExampleHandler_Records() {
-	h := lfr.New(10, nil)
+	h := slogbox.New(10, nil)
 	logger := slog.New(h)
 
 	logger.Info("first")
@@ -37,7 +37,7 @@ func ExampleHandler_Records() {
 }
 
 func ExampleHandler_All() {
-	h := lfr.New(10, nil)
+	h := slogbox.New(10, nil)
 	logger := slog.New(h)
 
 	logger.Info("alpha")
@@ -52,7 +52,7 @@ func ExampleHandler_All() {
 }
 
 func ExampleHandler_JSON() {
-	h := lfr.New(10, &lfr.Options{Level: slog.LevelError})
+	h := slogbox.New(10, &slogbox.Options{Level: slog.LevelError})
 	logger := slog.New(h)
 
 	logger.Info("ignored") // below Error level
@@ -70,7 +70,7 @@ func ExampleHandler_JSON() {
 }
 
 func ExampleHandler_WriteTo() {
-	h := lfr.New(10, nil)
+	h := slogbox.New(10, nil)
 	logger := slog.New(h)
 
 	logger.Info("first")
